@@ -851,6 +851,7 @@ InitialPoint(A, Asparse, Adense, Factor, b, c,
 	 w[i] = upbound[i] - x[irow];
       }
 
+   jair1(A, Factor, b, c, x, pi, s, w, r, upbound, NumBounds, iupbound);
    
    /* compute delta_primal and delta_dual */
    
@@ -913,6 +914,7 @@ InitialPoint(A, Asparse, Adense, Factor, b, c,
 	 w[i] += delta_primal;
       }
    
+   jair1(A, Factor, b, c, x, pi, s, w, r, upbound, NumBounds, iupbound);
 
    Free((char *) tempR1);
    Free((char *) tempR2);

@@ -5,13 +5,7 @@
 #include "memory.h"
 #include "string.h"
 #include <time.h>
-
-double dnrm2(int *n, double *x, int *incx);
-double ddot(int *n, double *dx, int *incx, double *dy, int *incy); // arquivo cblas
-void   sortd(double *va, int *v, int n);
-void   both(MMTtype *M, int *Acol, double *v1, double *v2, double *x, double *v, double *y, double *w);
-void   cholesky(int aux6, int pp2, int p, double s1, double v, double valgaux[], double valg[], double valg1[], double wwaux[], double l1[], double rr1[], double rr2[], double rr4[], double *rr3, double u[], double dd12[]);
-void   resolucao_sistema(int aux6, int p, double s1, double sti[], double ssf[], double ssf2[], double dd12[], double valg1[], double rr4[]);
+#include "neumann.h"
 
 #define abs(x) ((x) >= 0 ? (x) : -(x))
 
@@ -73,57 +67,58 @@ double norma2(int *n, double *x, int *incx)
 void jair1(MMTtype *M, FactorType *Factor, double b[], double c[], double *px, double *pi, double *ps, double *pw, double *pr, double upbound[], int NumBounds, int BoundIndex[])
 {
 	int    i, tam, aux, auxx, aux1, aux2, aux3, aux4, aux5, aux6, aux7,ccc;
-	int    j, k, , cc, p, mxzero, mxzero1, xzero, l, cci, pp2, p_i, pj, pk, ONE;
+	int    j, k, cc, p, mxzero, mxzero1, xzero, l, cci, pp2, p_i, pj, pk, ONE;
+	int    zz;
 	int    *wwa, *dl1posi, *duposi, *r1r2, *ww, *Acol;
 	double *x, *s, *w, *r;
 	double vv1, c1, c11, s1, somat,  v, alpu, alpl1, ep1, ep2, resiff, resif1, dif, rr3, normabc;
 	double *B1, *y1, *y2, *B2, *B,*somalin,*xgrande,*wb, *Paux1, *Paux2, *rr1, *rr2, *rr4, *l1, *u, alpp;
 	double *val1,*val2,*resi1,*resi2,*resiv,*resiu,*w2,*uu1,*uu2, *valg, *valg1, *wwaux, *dd12,*valgaux, *resif, *normau;
-	double *sti, *sts, *ssf, *du, *dl1, *N1, *sti2, *sts2, *ssf2, *dl1mzero, *dumzero, *fornang;
+	double *sti, *sts, *ssf, *du, *du1, *dl, *dl1, *N1, *sti2, *sts2, *ssf2, *dl1mzero, *dumzero, *fornang;
 
 	double	vduration, vduration_sistema, vduration_cholesky, vduration_subproblema, vduration_fornang, vduration_transforma;
 	clock_t start, start1, start2, start3, start4, start5, end, end1, end2, end3, end4, end5;
 
 
-    if((M->NumRows) < 1000){
+    if((M->NumRows) < 1e4){
 		p = 2;
-		ep1     = 0.0000000000000001;
+		ep1 = 1e-16;
 	}
 	else{
-		if((M->NumRows) < 10000){
+		if((M->NumRows) < 1e5){
 			p = 4;
-			ep1     = 0.000000000000001;
+			ep1 = 1e-15;
 		}
 		else{
-			if((M->NumRows) < 20000){
+			if((M->NumRows) < 2e5){
 				p = 8;
-				ep1     = 0.0000000000000001;
+				ep1 = 1e-16;
 			}
 			else{
-				if((M->NumRows) < 100000){
+				if((M->NumRows) < 1e6){
 					p = 20;
-					ep1     = 0.000000000001;
+					ep1 = 1e-12;
 				}
 				else{
-					if((M->NumRows) < 150000){
+					if((M->NumRows) < 1.5e6){
 						p = 40;
-						ep1     = 0.00000000000001;
+						ep1 = 1e-14;
 					}
 					else{
 						p = 80;
-						ep1     = 0.00000000001;
+						ep1 = 1e-11;
 					}
 				}
 			}
 		}
 	}
 
-    ep2 = ep1/100;
+    	ep2 = ep1/100;
 
 
 	ccc     = 100; // quantidade de iterações
 
-	resiff  = 0.000001;
+	resiff  = 1e-6;
 
 	aux     = M->NumCols + NumBounds;
 	auxx    = M->NumRows + NumBounds;
@@ -295,7 +290,7 @@ void jair1(MMTtype *M, FactorType *Factor, double b[], double c[], double *px, d
 
 
 		B[j] = norma2(&tam, B1, &ONE);
-
+	}
 
 	k  = 0;
 
@@ -928,29 +923,29 @@ start5    = clock();
 				alpu    = 1;
 				alpp    = 1;
 
-          			alpl1 = -10000000000; // que valor iniciar
-            			alpu = -10000000000;
+          			alpl1 = -1e10; // que valor iniciar
+            			alpu = -1e10;
             			for(i = 0; i < aux6; i++)
                 		{
                     		dl1[i]      = ssf2[i] - ssf[i] * c1;            // direcao de l1 - verificar se depois usa dl1
                     		du[i]       = (rr2[i] - (u[i]* dl1[i])) / l1[i] ;   // direcao u - verificar se depois usa du
   
-                    			if (dl1[i] < 0.0 && direcao_l<dl[i])
+                    			if (dl1[i] < 0.0 && dl1[i]<dl[i])
                     			{
                         		  alpl1 = -l1[i] / dl1[i];
                     			}
   
-                    			if(du[i] < 0.0 && direcao_u<du[i])
+                    			if(du[i] < 0.0 && du1[i]<du[i])
                     			{
                           
                         		  alpu = -u[i] / du[i];
                     			}
                		     }
   
-            		    if (alpl1 == -10000000000)
+            		    if (alpl1 == -1e10)
                 		alpl1 = 1;
   
-            		    if (alpu  == -10000000000)
+            		    if (alpu  == -1e10)
                    		alpu  = 1; 
 
 				if(alpp > 0.995 * alpl1)
@@ -1145,7 +1140,6 @@ start5    = clock();
 	Free((char *)xgrande);
 	Free((char *)B1);
 	Free((char *)B2);
-	Free((char *)BPCx User Guide);
 	Free((char *)somalin);
 	Free((char *)fornang);
 	Free((char *)normau);
